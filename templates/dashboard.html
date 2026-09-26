@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERS - Dashboard</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{background:#f5f7fb;font-family:Segoe UI,Arial}.sidebar{background:#0d47a1;min-height:100vh;color:white}
+.sidebar a{color:white;text-decoration:none;display:block;padding:12px 20px;border-radius:8px;margin:5px 0}
+.sidebar a:hover,.active{background:rgba(255,255,255,.2)}.card{border:none;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.stat{border-left:5px solid}
+.cat-head{font-weight:900; font-size:12px; padding:7px 12px; border-radius:6px; margin:18px 0 8px 0}
+#users-info-panel{display:none; border:2px solid #0d47a1; animation: fadeIn .3s}
+@keyframes fadeIn{from{opacity:0; transform:translateY(-10px)} to{opacity:1; transform:translateY(0)}}
+.btn-users-info{background:#ffcc00; color:#000; font-weight:900; border:none; padding:8px 18px; border-radius:20px; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+<div class="container-fluid"><div class="row">
+<div class="col-md-2 sidebar p-3">
+<h5>🛡️ ERS RWANDA</h5><small>Kigali • Emergency</small><hr>
+<a class="active">📊 Dashboard</a><a>🚨 Reports ({{ reports|length if reports else 0 }})</a><a>👮 Responders</a><a href="#" onclick="toggleUsersInfo(); return false;" style="background:#ffcc00;color:#000;font-weight:800;">👥 USERS INFO ({{ pending_users|length if pending_users else 0 }})</a>
+<div class="mt-5"><small>👤 {{ user_email }}</small><br><small>{{ user_name }} | {{ user_role }}</small><br><br><a href="/logout" style="background:#c62828;text-align:center; display:block; padding:8px; border-radius:8px; color:white; text-decoration:none;">🚪 Logout</a></div>
+</div>
+<div class="col-md-10 p-4">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+<div><h3 class="fw-bold">Emergency Response Dashboard</h3><small>Real-time monitoring • WELCOME {{ user_name }}! • {{ user_role }} • {{ user_room }}</small></div>
+<div class="d-flex gap-2 align-items-center">
+<button class="btn-users-info" onclick="toggleUsersInfo()">👥 USERS INFO ({{ users|length }}) ⏳ {{ pending_users|length }} ▼</button>
+<span class="badge bg-success p-2">● Operational</span>
+</div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat, msg in messages %}<div class="alert alert-{{ 'success' if cat=='success' else 'danger' }}">{{ msg }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<!-- USERS INFO PANEL -->
+<div id="users-info-panel" class="card p-3 mb-4">
+<div class="d-flex justify-content-between align-items-center mb-2">
+<h5 class="m-0">👥 USERS INFO - Categories by Role</h5>
+<button class="btn btn-sm btn-dark" onclick="toggleUsersInfo()">✖ Funga</button>
+</div>
+
+{% if pending_users %}
+<div class="cat-head" style="background:#fff3cd; color:#856404; border:1px solid #ffcc00;">⏳ PENDING - Bitegereje EMEZA ({{ pending_users|length }})</div>
+<table class="table table-sm table-bordered">
+<tr><th>Names</th><th>Email</th><th>Phone</th><th>Role</th><th>Room</th><th>Action</th></tr>
+{% for email, u in pending_users.items() %}
+<tr style="background:#fffbe6">
+<td><b>{{ u.name }}</b></td><td>{{ email }}</td><td>{{ u.phone }}</td>
+<td><span class="badge bg-warning text-dark">{{ u.role }}</span></td><td><small>{{ u.room }}</small></td>
+<td><a href="/approve/{{ email }}" class="btn btn-success btn-sm" style="font-size:11px">✅ EMEZA</a> <a href="/reject/{{ email }}" class="btn btn-danger btn-sm" style="font-size:11px">❌</a></td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<div class="alert alert-success py-2">✅ Nta pending - bose baremejwe!</div>
+{% endif %}
+
+<div class="cat-head" style="background:#c62828; color:white;">🔴 CATEGORY 1: TOP ROOM - Top Admin / Mayor / DPC ({{ users.values()|selectattr('role','in',['Top Admin','Mayor','DPC'])|list|length }})</div>
+<table class="table table-sm table-bordered"><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Room</th><th>Status</th></tr>
+{% for email, u in users.items() if u.role in ['Top Admin','Mayor','DPC','Executive Secretary'] %}
+<tr><td>{{ u.name }}</td><td>{{ email }}</td><td>{{ u.phone }}</td><td><b>{{ u.role }}</b></td><td>{{ u.room }}</td><td><span class="badge bg-success">{{ u.status }}</span></td></tr>
+{% endfor %}
+</table>
+
+<div class="cat-head" style="background:#0d47a1; color:white;">🔵 CATEGORY 2: SECURITY - Police / DASSO / SEDO ({{ users.values()|selectattr('role','in',['Police Station','DASSO','SEDO'])|list|length }})</div>
+<table class="table table-sm table-bordered"><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Room</th><th>Status</th></tr>
+{% for email, u in users.items() if u.role in ['Police Station','DASSO','SEDO'] %}
+<tr><td>{{ u.name }}</td><td>{{ email }}</td><td>{{ u.phone }}</td><td>{{ u.role }}</td><td>{{ u.room }}</td><td><span class="badge bg-success">{{ u.status }}</span></td></tr>
+{% endfor %}
+</table>
+
+<div class="cat-head" style="background:#2e7d32; color:white;">🟢 CATEGORY 3: PUBLIC - Guest / Citizen / Reporter ({{ users.values()|selectattr('role','in',['Guest','Citizen','Reporter'])|list|length }})</div>
+<table class="table table-sm table-bordered"><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Room</th><th>Status</th></tr>
+{% for email, u in users.items() if u.role in ['Guest','Citizen','Reporter'] %}
+<tr><td>{{ u.name }}</td><td>{{ email }}</td><td>{{ u.phone }}</td><td>{{ u.role }}</td><td>{{ u.room }}</td><td><span class="badge {% if u.status=='approved' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ u.status }}</span></td></tr>
+{% endfor %}
+</table>
+</div>
+
+<!-- CORRECT INFO - STATS NYAYO -->
+<div class="row g-3 mb-4">
+<div class="col-md-3"><div class="card p-3 stat" style="border-color:#c62828"><small>🔴 Total Reports</small><h2>{{ reports|length if reports else 0 }}</h2><small class="text-muted">{{ users|length }} Users Registered</small></div></div>
+<div class="col-md-3"><div class="card p-3 stat" style="border-color:orange"><small>🟠 Pending Approvals</small><h2>{{ pending_users|length if pending_users else 0 }}</h2><small>Need {{ pending_users|length }} EMEZA</small></div></div>
+<div class="col-md-3"><div class="card p-3 stat" style="border-color:#2e7d32"><small>🟢 Approved Users</small><h2>{{ users|length if users else 0 }}</h2><small>100% Active</small></div></div>
+<div class="col-md-3"><div class="card p-3 stat" style="border-color:#0d47a1"><small>🔵 System Status</small><h2 style="font-size:20px">OPERATIONAL</h2><small>Kigali • {{ user_room }}</small></div></div>
+</div>
+
+<!-- CORRECT INFO - RECENT REPORTS NYAYO -->
+<div class="card p-3">
+<h5>🚨 Recent Reports - Amakuru Nyayo</h5>
+{% if reports and reports|length > 0 %}
+<table class="table table-sm"><tr><th>ID</th><th>Type</th><th>Reporter</th><th>Phone</th><th>Location</th><th>Role</th><th>Status</th></tr>
+{% for r in reports[-5:]|reverse %}
+<tr>
+<td><b>{{ r.id if r.id else 'ER-' ~ loop.index }}</b></td>
+<td>{{ r.type if r.type else r.emergency_type }}</td>
+<td>{{ r.reporter_name if r.reporter_name else r.name }}</td>
+<td>{{ r.phone }}</td>
+<td>{{ r.location }}</td>
+<td><span class="badge bg-secondary">{{ r.reporter_role if r.reporter_role else r.role }}</span></td>
+<td><span class="badge {% if r.status=='resolved' %}bg-success{% elif r.status=='pending' %}bg-warning{% else %}bg-danger{% endif %}">{{ r.status|upper if r.status else 'NEW' }}</span></td>
+</tr>
+{% endfor %}
+</table>
+{% else %}
+<div class="text-center p-4 text-muted">
+<h1>📭</h1>
+<p>Nta report iraboneka ubu</p>
+<small>Reports zizajya hano iyo abantu batanze amakuru y'ubutabazi</small>
+</div>
+{% endif %}
+<a href="/reports" class="btn btn-primary w-100 mt-2">View All Reports ({{ reports|length if reports else 0 }}) →</a>
+</div>
+
+</div></div></div>
+
+<script>
+function toggleUsersInfo(){
+  var panel = document.getElementById('users-info-panel');
+  if(panel.style.display === 'none' || panel.style.display === ''){
+    panel.style.display = 'block';
+    window.scrollTo({top:0, behavior:'smooth'});
+  } else {
+    panel.style.display = 'none';
+  }
+}
+{% if pending_users and pending_users|length > 0 %}
+document.addEventListener('DOMContentLoaded', function(){ document.getElementById('users-info-panel').style.display='block'; });
+{% endif %}
+</script>
+</body>
+</html>

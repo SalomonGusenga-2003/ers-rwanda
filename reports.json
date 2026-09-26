@@ -1,0 +1,18 @@
+[
+  {
+    "id": "ER-1125",
+    "type": "Accident",
+    "emergency_type": "Accident",
+    "desc": "IMPANUKA Y, IMODOKA KAMYO",
+    "description": "IMPANUKA Y, IMODOKA KAMYO",
+    "phone": "0791235595",
+    "location": "Kigali",
+    "reporter": "iyiniemailyange@gmail.com",
+    "reporter_name": "ICYIMPAYE Ange",
+    "reporter_role": "SEDO",
+    "role": "SEDO",
+    "name": "ICYIMPAYE Ange",
+    "status": "pending",
+    "time": "2026-09-26 16:01"
+  }
+]

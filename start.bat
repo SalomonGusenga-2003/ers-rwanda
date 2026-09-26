@@ -1,0 +1,6 @@
+@echo off
+echo Installing...
+pip install flask flask_sqlalchemy --quiet
+echo Starting Emergency System...
+python app.py
+pause

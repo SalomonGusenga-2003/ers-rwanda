@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Report Incident</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>🚨 Report an Incident</h1>
+    <form method="POST" enctype="multipart/form-data" action="/report">
+        <label>Incident Type</label>
+        <select name="incident_type" required>
+            <option value="">Select</option>
+            <option>Crime</option><option>Accident</option><option>Fire</option><option>Disaster</option><option>Medical Emergency</option><option>Other</option>
+        </select><br><br>
+        <label>Description</label>
+        <textarea name="description" required placeholder="Describe..."></textarea><br><br>
+        <label>Phone</label>
+        <input name="phone" type="tel" required><br><br>
+        
+        <!-- WHATSAPP STYLE LIVE LOCATION -->
+        <div style="background:#e8f5e9; padding:15px; border-radius:10px; border:2px dashed #4caf50; margin-bottom:15px;">
+            <label style="font-weight:bold; font-size:15px;">📍 Aho Incident yabereye</label>
+            <p style="font-size:13px; color:#555; margin:5px 0;">Kanda button nka WhatsApp, location irahita ifata</p>
+            
+            <button type="button" id="liveBtn" onclick="getLiveLocation()" 
+            style="background:#25D366; color:white; padding:14px; border:none; border-radius:25px; font-size:16px; font-weight:bold; cursor:pointer; width:100%; margin:10px 0;">
+                📡 SHARE MY LIVE LOCATION
+            </button>
+            
+            <p id="status" style="font-size:13px; color:#333; background:white; padding:8px; border-radius:5px; text-align:center;">👆 Kanda hejuru wemereze "Allow Location"</p>
+            
+            <div id="map" style="height:320px; border-radius:8px; margin-top:10px;"></div>
+        </div>
+
+        <input name="lat" id="lat" placeholder="Latitude" readonly required style="background:#f0f0f0;">
+        <input name="lng" id="lng" placeholder="Longitude" readonly required style="background:#f0f0f0;"><br>
+        <input name="location_name" id="location_name" placeholder="Location name e.g. Kacyiru - izuzuza ubwayo"><br><br>
+        
+        <label>Photo</label>
+        <input name="photo" type="file" accept="image/*"><br><br>
+        <button type="submit" style="width:100%; padding:15px; font-size:18px;">🚀 SEND REPORT</button>
+    </form>
+    <br><a href="/">Back</a>
+</div>
+
+<script>
+    var map = L.map('map').setView([-1.9441, 30.0619], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var marker;
+
+    // Niba umuntu akanda kuri map na none biracyakora
+    map.on('click', function(e){
+        setLocation(e.latlng.lat, e.latlng.lng, "Wakande kuri map");
+    });
+
+    function setLocation(lat, lng, msg){
+        document.getElementById('lat').value = lat.toFixed(6);
+        document.getElementById('lng').value = lng.toFixed(6);
+        document.getElementById('location_name').value = msg + " - " + lat.toFixed(4) + ", " + lng.toFixed(4);
+        
+        if(marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map).bindPopup("📍 "+msg).openPopup();
+        map.setView([lat, lng], 16);
+    }
+
+    function getLiveLocation(){
+        const status = document.getElementById("status");
+        const btn = document.getElementById("liveBtn");
+        
+        status.innerHTML = "⏳ Turimo gushaka aho uri... Emeza 'Allow'";
+        status.style.background = "#fff3cd";
+        btn.innerHTML = "⌛ GUSHAKA...";
+        btn.disabled = true;
+        btn.style.background = "#999";
+
+        if(!navigator.geolocation){
+            status.innerHTML = "❌ Phone yawe ntishyigikira live location";
+            btn.disabled = false;
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                
+                setLocation(lat, lng, "Live Location yafashwe");
+                
+                status.innerHTML = "✅ Yafashwe! <a href='https://www.google.com/maps?q="+lat+","+lng+"' target='_blank' style='color:blue; font-weight:bold;'>🗺️ Fungura muri Google Maps</a><br>Ubu uzuza description ukande SEND";
+                status.style.background = "#d4edda";
+                status.style.color = "green";
+                
+                btn.innerHTML = "✅ LIVE LOCATION YAFASHWE";
+                btn.style.background = "#128C7E";
+                btn.disabled = false;
+            },
+            (err) => {
+                status.innerHTML = "❌ Ntabwo yabonetse: "+err.message+"<br>Gerageza kwemera Location cyangwa ukande kuri map";
+                status.style.background = "#f8d7da";
+                btn.innerHTML = "🔄 GERAGEZA PONDI";
+                btn.style.background = "#25D366";
+                btn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    }
+</script>
+</body>
+</html>

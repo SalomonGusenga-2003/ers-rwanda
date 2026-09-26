@@ -1,0 +1,18 @@
+{
+  "salomongusenga25@gmail.com": {
+    "password": "admin123",
+    "name": "Salomon Gusenga",
+    "phone": "0780000000",
+    "role": "Top Admin",
+    "room": "TOP_ROOM",
+    "status": "approved"
+  },
+  "iyiniemailyange@gmail.com": {
+    "password": "admin1234",
+    "name": "ICYIMPAYE Ange",
+    "phone": "0790346181",
+    "role": "SEDO",
+    "room": "LAST_ROOM",
+    "status": "approved"
+  }
+}

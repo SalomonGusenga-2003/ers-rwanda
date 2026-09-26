@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<div class="container">
+    <h1>Welcome {{ user.names }} ({{ user.role }})</h1>
+    <p><a href="/report"><button>🚨 Report New Emergency</button></a></p>
+    <p><a href="/logout">Logout</a> {% if user.role=='TOP_ADMIN' %} | <a href="/admin/approvals">Admin Approvals</a> {% endif %}</p>
+    <hr>
+    <h2>{% if user.role=='TOP_ADMIN' %}All Reports (Anonymous){% else %}My Reports{% endif %}</h2>
+    {% for r in reports %}
+    <div style="border:1px solid #ddd; padding:10px; margin:10px 0; border-radius:8px;">
+        <b>{{ r.incident_type }}</b> - {{ r.created_at }}<br>
+        {{ r.description }}<br>
+        📍 {{ r.location_name }} ({{ r.lat }}, {{ r.lng }})<br>
+        📞 {{ r.phone }}
+        {% if r.photo %}<br><img src="/static/uploads/{{ r.photo }}" width="200">{% endif %}
+        {% if user.role=='TOP_ADMIN' %}<br><small style="color:gray;">ANONYMOUS Report ID: {{ r.id }}</small>{% endif %}
+    </div>
+    {% else %}
+    <p>No reports yet.</p>
+    {% endfor %}
+</div>
+</body>
+</html>

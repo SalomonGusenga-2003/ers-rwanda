@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Approval - Emergency</title>
+<style>
+body{font-family:Arial;padding:20px;background:#f5f5f5}
+.card{border:1px solid #ccc;padding:15px;margin:10px 0;border-radius:8px;background:white}
+.btn{padding:8px 15px;border:none;border-radius:5px;color:white;text-decoration:none;display:inline-block;margin-right:10px}
+.approve{background:green}
+.reject{background:red}
+</style>
+</head>
+<body>
+<h2>🔐 TOP ADMIN - Approve Users ({{ pending_users|length }} pending)</h2>
+<a href="/">⬅️ Back to Dashboard</a>
+<hr>
+{% for u in pending_users %}
+<div class="card">
+  <b>{{ u.names }}</b><br>
+  Email: {{ u.email }}<br>
+  Role: {{ u.role }}<br>
+  Phone: {{ u.phone }}<br>
+  <small>Date: {{ u.created_at }}</small><br><br>
+  <a href="/approve/{{ u.id }}" class="btn approve">✅ Approve</a>
+  <a href="/reject/{{ u.id }}" class="btn reject">❌ Reject</a>
+</div>
+{% else %}
+<p style="background:white;padding:20px;">Nta muntu utegereje kwemezwa.</p>
+{% endfor %}
+
+<h3>All Users</h3>
+{% for u in all_users %}
+<p>{{ u.names }} ({{ u.role }}) - {{ u.email }} - Approved: {{ u.is_approved }}</p>
+{% endfor %}
+</body>
+</html>
