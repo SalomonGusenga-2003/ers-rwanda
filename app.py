@@ -4,13 +4,55 @@ from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from functools import wraps
+from itsdangerous import URLSafeTimedSerializer
 
 app = Flask(__name__)
-app.secret_key = "emergency_rwanda_2024_final"
+app.secret_key = os.environ.get("SECRET_KEY", "emergency_rwanda_2024_final_secure_2026")
 
-# EMAIL CONFIG
+# EMAIL CONFIG - Ntugahindure, iri sawa!
 SENDER_EMAIL = "salomongusenga25@gmail.com"
 SENDER_APP_PASSWORD = "jukfkqbalhkhuxzx"
+
+# ===== FORGOT PASSWORD CONFIG =====
+serializer = URLSafeTimedSerializer(app.secret_key)
+
+def generate_reset_token(email):
+    return serializer.dumps(email, salt='password-reset-salt-ers-2026')
+
+def verify_reset_token(token, expiration=900):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt-ers-2026', max_age=expiration)
+        return email
+    except:
+        return None
+
+def send_reset_email(to_email, reset_link):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = f"ERS Rwanda <{SENDER_EMAIL}>"
+        msg['To'] = to_email
+        msg['Subject'] = f"ERS Rwanda - Reset Password"
+        body = f"""Murakaza neza!
+
+WASABYE GUHINDURA PASSWORD!
+
+Kanda kuri iyi link (imara 15min gusa):
+{reset_link}
+
+Niba utabigusabye, irengagiza iyi email.
+
+ERS Team - Rwanda Secure & Fast
+"""
+        msg.attach(MIMEText(body, 'plain'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_APP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Reset Email Error: {e}")
+        return False
 
 # ===== ROOMS DEFINITION =====
 TOP_ROOM = ["Top Admin", "Mayor", "RDF", "Police", "RIB", "DASSO Coordinator"]
@@ -136,6 +178,57 @@ def login():
                 return redirect('/verify')
         flash("❌ Email cyangwa Password siyo!", "danger")
     return render_template('login.html')
+
+# ===== NEW: FORGOT PASSWORD ROUTES =====
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email').strip().lower()
+        if email in USERS:
+            token = generate_reset_token(email)
+            reset_link = request.host_url.rstrip('/') + f'/reset-password/{token}'
+            sent = send_reset_email(email, reset_link)
+            if sent:
+                flash(f"✅ Reset link yoherejwe kuri {email}! Reba email yawe (15min).", "success")
+            else:
+                # Dev mode - iyo email yanze, turamwereka link
+                flash(f"⚠️ Email ntiyoherejwe, ariko link yawe: {reset_link}", "warning")
+                flash(f"Dev Link (15min): {reset_link}", "info")
+        else:
+            # Security: ntitubwira niba email ibaho
+            flash("✅ Niba email ibaho, woherejwe reset link! Reba inbox yawe.", "info")
+        return redirect('/forgot-password')
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    email = verify_reset_token(token)
+    if not email:
+        flash("❌ Link yapfuye cyangwa yarenze 15min! Saba indi nshya.", "danger")
+        return redirect('/forgot-password')
+
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+
+        if new_password!= confirm:
+            flash("❌ Passwords ntizihuye!", "danger")
+            return render_template('reset_password.html', token=token, email=email)
+
+        if len(new_password) < 8:
+            flash("❌ Password igomba kuba nibura 8 characters!", "danger")
+            return render_template('reset_password.html', token=token, email=email)
+
+        if email in USERS:
+            USERS[email]['password'] = new_password
+            save_users()
+            flash("✅ Password yahindutse neza! Injira ubu.", "success")
+            return redirect('/login')
+        else:
+            flash("❌ User ntabaho!", "danger")
+            return redirect('/forgot-password')
+
+    return render_template('reset_password.html', token=token, email=email)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -286,4 +379,5 @@ def logout():
     return redirect('/login')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port, debug=False)
