@@ -179,23 +179,25 @@ def login():
         flash("❌ Email cyangwa Password siyo!", "danger")
     return render_template('login.html')
 
-# ===== NEW: FORGOT PASSWORD ROUTES =====
+# ===== NEW: FORGOT PASSWORD ROUTES - FIXED FOR RENDER =====
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         email = request.form.get('email').strip().lower()
         if email in USERS:
             token = generate_reset_token(email)
-            reset_link = request.host_url.rstrip('/') + f'/reset-password/{token}'
+            # FIX: Koresha host_url + https kuri Render
+            base_url = request.host_url.rstrip('/')
+            if '127.0.0.1' not in base_url and 'localhost' not in base_url:
+                base_url = base_url.replace('http://', 'https://')
+            reset_link = f"{base_url}/reset-password/{token}"
             sent = send_reset_email(email, reset_link)
             if sent:
                 flash(f"✅ Reset link yoherejwe kuri {email}! Reba email yawe (15min).", "success")
             else:
-                # Dev mode - iyo email yanze, turamwereka link
                 flash(f"⚠️ Email ntiyoherejwe, ariko link yawe: {reset_link}", "warning")
                 flash(f"Dev Link (15min): {reset_link}", "info")
         else:
-            # Security: ntitubwira niba email ibaho
             flash("✅ Niba email ibaho, woherejwe reset link! Reba inbox yawe.", "info")
         return redirect('/forgot-password')
     return render_template('forgot_password.html')
@@ -206,19 +208,15 @@ def reset_password(token):
     if not email:
         flash("❌ Link yapfuye cyangwa yarenze 15min! Saba indi nshya.", "danger")
         return redirect('/forgot-password')
-
     if request.method == 'POST':
         new_password = request.form.get('password')
         confirm = request.form.get('confirm_password')
-
         if new_password!= confirm:
             flash("❌ Passwords ntizihuye!", "danger")
             return render_template('reset_password.html', token=token, email=email)
-
         if len(new_password) < 8:
             flash("❌ Password igomba kuba nibura 8 characters!", "danger")
             return render_template('reset_password.html', token=token, email=email)
-
         if email in USERS:
             USERS[email]['password'] = new_password
             save_users()
@@ -227,7 +225,6 @@ def reset_password(token):
         else:
             flash("❌ User ntabaho!", "danger")
             return redirect('/forgot-password')
-
     return render_template('reset_password.html', token=token, email=email)
 
 @app.route('/signup', methods=['GET', 'POST'])
